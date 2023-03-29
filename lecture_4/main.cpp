@@ -2,12 +2,20 @@
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(640, 480), "SFML Application");
+    const int windowWidth = 1920;
+    const int windowHeight = 1080;
+    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "SFML Application");
+    window.setFramerateLimit(60);
     sf::CircleShape egg;
-
-    egg.setRadius(40.f);
-    egg.setPosition(100.f, 100.f);
+    float eggRadius = 40.f;
+    egg.setRadius(eggRadius);
+    float x = 100.f;
+    float y = 100.f;
+    float sx = 5.0f;
+    float sy = 0.0f;
+    egg.setPosition(x, y);
     egg.setFillColor(sf::Color::Cyan);
+
 
     while (window.isOpen())
     {
@@ -21,6 +29,14 @@ int main()
 
         window.clear();
         window.draw(egg);
+        x += sx;
+        egg.setPosition(x, y);
+
+        if (x+2*eggRadius >= windowWidth || x < 0)
+        {
+            sx = -(sx);
+        }
+
         window.display();
     }
 }
