@@ -26,6 +26,7 @@ private:
     {
         // TODO understand this code
         std::shared_ptr<sf::Shape> circle = std::make_shared<sf::CircleShape>(radius);
+        // TODO Need to add name
         circle->setPosition(initX, initY);
         circle->setFillColor(sf::Color(rColor, gColor, bColor));
         // TODO add speed property
@@ -44,6 +45,8 @@ private:
         int bColor;
         float radius;
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor >> radius;
+
+        // TODO start to parse speed somehow
         addCircle(initX, initY, rColor, gColor, bColor, radius);
     }
 public:
@@ -64,7 +67,6 @@ public:
         return m_shapes;
     }
 
-
     void loadFromFile(const std::string& filename)
     {
         std::ifstream fin(filename);
@@ -76,19 +78,22 @@ public:
         std::string option_name;
         while (fin >> option_name)
         {
-            // call different parse function depending on the option name
+            // TODO call different parse function depending on the option name in MAP ?
             if (option_name == "Window")
             {
                 std::cout << "Windows settings were found" << std::endl;
                 setWindowSettings(fin);
             }
-
+            // TODO add font parsing
             if (option_name == "Circle")
             {
                 std::cout << "Circle was found" << std::endl;
                 parseCircle(fin);
             }
 
+            if (option_name == "Rectangle")
+                std::cout << "Rectangle was found" << std::endl;
+                // TODO do something
         }
     };
 
@@ -120,6 +125,8 @@ int main()
             // dereference
         }
         window.display();
+
+        // TODO for all figures update positions and check for bounce
     }
     return 0;
 }
