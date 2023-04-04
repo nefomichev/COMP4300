@@ -1,18 +1,80 @@
+#include <utility>
+
 #include "SFML/Graphics.hpp"
 #include "fstream"
 #include "map"
 #include "vector"
 #include "iostream"
 
+class movingColoredShape
+{
+    std::shared_ptr<sf::Shape> m_shape;
+    sf::Color m_color;
+    float m_initPosX;
+    float m_initPosY;
+    float m_speedX;
+    float m_speedY;
+    std::string m_shapeName;
+public:
+    movingColoredShape(std::shared_ptr<sf::Shape> shape,
+                       sf::Color color,
+                       float initPosX,
+                       float initPosY,
+                       float speedX,
+                       float speedY,
+                       std::string name)
+    : m_shape(std::move(shape)), m_color(color),
+      m_initPosX(initPosX), m_initPosY(initPosY),
+      m_speedX(speedX), m_speedY(speedY), m_shapeName(std::move(name))
+    {
+       // Filling shape with new properties
+        m_shape->setFillColor(m_color);
+        m_shape->setPosition(m_initPosX, m_initPosY);
+        std::cout << "Moving ColorShape '" << m_shapeName << "' created" << std::endl;
+    }
+
+    void moveBySpeed()
+    {
+        m_shape->move(m_speedX, m_speedY);
+    };
+
+    void setSpeedX(float newSpeedX)
+    {
+        m_speedX = newSpeedX;
+    };
+
+    void setSpeedY(float newSpeedY)
+    {
+        m_speedY = newSpeedY;
+    };
+
+    auto getSpeedX() const
+    {
+        return m_speedX ;
+    };
+
+    auto getSpeedY() const
+    {
+        return m_speedY ;
+    };
+
+    auto getShape()
+    {
+        return m_shape;
+    };
+
+
+};
+
+
 class Engine
 {
 private:
     unsigned int m_windowWidth;
     unsigned int m_windowHeight;
-    std::vector<std::shared_ptr<sf::Shape>> m_shapes;
-    // TODO understand that
+    std::vector<movingColoredShape> m_shapes;
 
-    void setWindowSettings(std::ifstream& fin)
+    void parseWindowSettings(std::ifstream& fin)
     {
         unsigned int windowWidth;
         unsigned int windowHeight;
@@ -20,17 +82,6 @@ private:
 
         m_windowWidth = windowWidth;
         m_windowHeight = windowHeight;
-    };
-
-    void addCircle(float initX, float initY, int rColor, int gColor, int bColor, float radius)
-    {
-        // TODO understand this code
-        std::shared_ptr<sf::Shape> circle = std::make_shared<sf::CircleShape>(radius);
-        // TODO Need to add name
-        circle->setPosition(initX, initY);
-        circle->setFillColor(sf::Color(rColor, gColor, bColor));
-        // TODO add speed property
-        m_shapes.push_back(circle);
     };
 
     void parseCircle(std::ifstream& fin)
@@ -46,8 +97,12 @@ private:
         float radius;
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor >> radius;
 
-        // TODO start to parse speed somehow
-        addCircle(initX, initY, rColor, gColor, bColor, radius);
+        std::shared_ptr<sf::Shape> circleShape = std::make_shared<sf::CircleShape>(radius);
+        sf::Color parsedColor(rColor, gColor, bColor);
+
+        movingColoredShape newCircleShape(circleShape, parsedColor, initX, initY, initSX, initSY, shapeName);
+        m_shapes.push_back(newCircleShape);
+
     }
 public:
     Engine() = default;
@@ -62,7 +117,7 @@ public:
         return m_windowHeight;
     }
 
-    std::vector<std::shared_ptr<sf::Shape>>& getShapes()
+    auto& getShapes()
     {
         return m_shapes;
     }
@@ -77,12 +132,13 @@ public:
 
         std::string option_name;
         while (fin >> option_name)
+        // TODO call different parse function depending on the option name in MAP ?
         {
-            // TODO call different parse function depending on the option name in MAP ?
+
             if (option_name == "Window")
             {
                 std::cout << "Windows settings were found" << std::endl;
-                setWindowSettings(fin);
+                parseWindowSettings(fin);
             }
             // TODO add font parsing
             if (option_name == "Circle")
@@ -97,6 +153,21 @@ public:
         }
     };
 
+    void checkBounce()
+    {
+        for (auto& shape : m_shapes)
+        {
+            // TODO use alias
+            float leftX = shape.getShape()->getGlobalBounds().left;
+            float rightX = shape.getShape()->getGlobalBounds().left + shape.getShape()->getGlobalBounds().width;
+            float topY = shape.getShape()->getGlobalBounds().top;
+            float bottomY = shape.getShape()->getGlobalBounds().top + shape.getShape()->getGlobalBounds().height;
+
+            if (leftX < 0 || rightX  > m_windowWidth)  shape.setSpeedX(shape.getSpeedX() * -1);
+            if (topY < 0  || bottomY > m_windowHeight) shape.setSpeedY(shape.getSpeedY() * -1);
+        }
+
+    }
 };
 
 
@@ -121,48 +192,13 @@ int main()
         window.clear();
         for (auto& shape : e.getShapes())
         {
-            window.draw(*shape);
-            // dereference
+            window.draw(*shape.getShape());
+            shape.moveBySpeed();
         }
         window.display();
+        e.checkBounce();
 
         // TODO for all figures update positions and check for bounce
     }
     return 0;
 }
-
-/*
-    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "SFML Application");
-    sf::CircleShape egg;
-    float eggRadius = 40.f;
-    egg.setRadius(eggRadius);
-    float x = 100.f;
-    float y = 100.f;
-    float sx = 5.0f;
-    float sy = 0.0f;
-    egg.setPosition(x, y);
-    egg.setFillColor(sf::Color::Cyan);
-
-
-    while (window.isOpen())
-    {
-        sf::Event event;
-
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-
-        window.clear();
-        window.draw(egg);
-        x += sx;
-        egg.setPosition(x, y);
-
-        if (x+2*eggRadius >= windowWidth || x < 0)
-        {
-            sx = -(sx);
-        }
-
-        window.display();
-     */
