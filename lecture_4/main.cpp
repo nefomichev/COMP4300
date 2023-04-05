@@ -63,6 +63,11 @@ public:
         return m_shape;
     };
 
+    void setShape(std::shared_ptr<sf::Shape> shape)
+    {
+        m_shape = shape;
+    };
+
 
 };
 
@@ -84,7 +89,7 @@ private:
         m_windowHeight = windowHeight;
     };
 
-    void parseCircle(std::ifstream& fin)
+    void parseShape(std::ifstream& fin, const std::string& option_name)
     {
         std::string shapeName;
         float initX;
@@ -94,16 +99,32 @@ private:
         int rColor;
         int gColor;
         int bColor;
+        float height;
+        float width;
         float radius;
-        fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor >> radius;
+        std::shared_ptr<sf::Shape> shape;
 
-        std::shared_ptr<sf::Shape> circleShape = std::make_shared<sf::CircleShape>(radius);
+
+        fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
+
+        if (option_name == "Circle")
+        {
+            fin >> radius;
+            std::cout << "Circle" << std::endl;
+            shape = std::make_shared<sf::CircleShape>(radius);
+        }
+
+        if (option_name == "Rectangle")
+        {
+            fin >> height >> width;
+            shape = std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
+        }
+
         sf::Color parsedColor(rColor, gColor, bColor);
-
-        movingColoredShape newCircleShape(circleShape, parsedColor, initX, initY, initSX, initSY, shapeName);
-        m_shapes.push_back(newCircleShape);
-
+        movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeName);
+        m_shapes.push_back(newShape);
     }
+
 public:
     Engine() = default;
 
@@ -140,16 +161,14 @@ public:
                 std::cout << "Windows settings were found" << std::endl;
                 parseWindowSettings(fin);
             }
+
             // TODO add font parsing
-            if (option_name == "Circle")
+            if (option_name == "Circle" || option_name == "Rectangle")
             {
-                std::cout << "Circle was found" << std::endl;
-                parseCircle(fin);
+                std::cout << "Shape was found" << std::endl;
+                parseShape(fin, option_name);
             }
 
-            if (option_name == "Rectangle")
-                std::cout << "Rectangle was found" << std::endl;
-                // TODO do something
         }
     };
 
@@ -175,7 +194,8 @@ public:
 int main()
 {
     Engine e;
-    e.loadFromFile("/Users/nefomichev/repos/COMP4300/lecture_4/config.txt");
+    e.loadFromFile("/Users/nikita.fomichev/repos/COMP4300/lecture_4/config.txt");
+    // TODO set framerate limit to 60
     sf::RenderWindow window(sf::VideoMode(e.getWindowWidth(), e.getWindowHeight()), "My Window");
 
     while (window.isOpen())
