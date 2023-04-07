@@ -1,10 +1,10 @@
 #include <utility>
-
 #include "SFML/Graphics.hpp"
 #include "fstream"
 #include "map"
 #include "vector"
 #include "iostream"
+
 
 class movingColoredShape
 {
@@ -62,14 +62,24 @@ public:
     {
         return m_shape;
     };
-
-    void setShape(std::shared_ptr<sf::Shape> shape)
-    {
-        m_shape = shape;
-    };
-
-
 };
+
+std::shared_ptr<sf::Shape> createCircle(std::ifstream& fin){
+    float radius;
+    fin >> radius;
+    std::shared_ptr<sf::Shape> shape = std::make_shared<sf::CircleShape>(radius);
+    return shape;
+};
+
+std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
+    float width;
+    float height;
+    fin >> height >> width;
+    std::shared_ptr<sf::Shape> shape = std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
+    return shape;
+};
+
+
 
 
 class Engine
@@ -78,6 +88,10 @@ private:
     unsigned int m_windowWidth;
     unsigned int m_windowHeight;
     std::vector<movingColoredShape> m_shapes;
+    std::map<std::string, std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>> m_shapeCreationFunctionsMapping = {
+            {"Circle",    createCircle},
+            {"Rectangle", createRectangle}
+    };
 
     void parseWindowSettings(std::ifstream& fin)
     {
@@ -89,6 +103,7 @@ private:
         m_windowHeight = windowHeight;
     };
 
+
     void parseShape(std::ifstream& fin, const std::string& option_name)
     {
         std::string shapeName;
@@ -99,27 +114,10 @@ private:
         int rColor;
         int gColor;
         int bColor;
-        float height;
-        float width;
-        float radius;
         std::shared_ptr<sf::Shape> shape;
 
-
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
-
-        if (option_name == "Circle")
-        {
-            fin >> radius;
-            std::cout << "Circle" << std::endl;
-            shape = std::make_shared<sf::CircleShape>(radius);
-        }
-
-        if (option_name == "Rectangle")
-        {
-            fin >> height >> width;
-            shape = std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
-        }
-
+        shape = m_shapeCreationFunctionsMapping[option_name](fin);
         sf::Color parsedColor(rColor, gColor, bColor);
         movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeName);
         m_shapes.push_back(newShape);
@@ -162,12 +160,13 @@ public:
                 parseWindowSettings(fin);
             }
 
-            // TODO add font parsing
-            if (option_name == "Circle" || option_name == "Rectangle")
+            if (m_shapeCreationFunctionsMapping.count(option_name) > 0)
             {
                 std::cout << "Shape was found" << std::endl;
                 parseShape(fin, option_name);
             }
+
+            // TODO add font parsing
 
         }
     };
@@ -194,9 +193,10 @@ public:
 int main()
 {
     Engine e;
-    e.loadFromFile("/Users/nikita.fomichev/repos/COMP4300/lecture_4/config.txt");
-    // TODO set framerate limit to 60
+    e.loadFromFile("/Users/nefomichev/repos/COMP4300/lecture_4/config.txt");
+
     sf::RenderWindow window(sf::VideoMode(e.getWindowWidth(), e.getWindowHeight()), "My Window");
+    window.setFramerateLimit(60);
 
     while (window.isOpen())
     {
