@@ -48,12 +48,12 @@ public:
         m_speedY = newSpeedY;
     };
 
-    auto getSpeedX() const
+    [[nodiscard]] auto getSpeedX() const
     {
         return m_speedX ;
     };
 
-    auto getSpeedY() const
+    [[nodiscard]] auto getSpeedY() const
     {
         return m_speedY ;
     };
@@ -69,7 +69,7 @@ std::shared_ptr<sf::Shape> createCircle(std::ifstream& fin){
     fin >> radius;
     std::shared_ptr<sf::Shape> shape = std::make_shared<sf::CircleShape>(radius);
     return shape;
-};
+}
 
 std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
     float width;
@@ -77,7 +77,7 @@ std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
     fin >> height >> width;
     std::shared_ptr<sf::Shape> shape = std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
     return shape;
-};
+}
 
 
 
@@ -85,8 +85,8 @@ std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
 class Engine
 {
 private:
-    unsigned int m_windowWidth;
-    unsigned int m_windowHeight;
+    unsigned int m_windowWidth = 1920;
+    unsigned int m_windowHeight = 1080;
     std::vector<movingColoredShape> m_shapes;
     std::map<std::string, std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>> m_shapeCreationFunctionsMapping = {
             {"Circle",    createCircle},
@@ -114,10 +114,9 @@ private:
         int rColor;
         int gColor;
         int bColor;
-        std::shared_ptr<sf::Shape> shape;
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
-        shape = m_shapeCreationFunctionsMapping[option_name](fin);
+        std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctionsMapping[option_name](fin);
         sf::Color parsedColor(rColor, gColor, bColor);
         movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeName);
         m_shapes.push_back(newShape);
@@ -193,7 +192,7 @@ public:
 int main()
 {
     Engine e;
-    e.loadFromFile("/Users/nefomichev/repos/COMP4300/lecture_4/config.txt");
+    e.loadFromFile("/Users/nikita.fomichev/repos/COMP4300/lecture_4/config.txt");
 
     sf::RenderWindow window(sf::VideoMode(e.getWindowWidth(), e.getWindowHeight()), "My Window");
     window.setFramerateLimit(60);
