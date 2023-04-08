@@ -9,12 +9,14 @@
 class movingColoredShape
 {
     std::shared_ptr<sf::Shape> m_shape;
-    sf::Color m_color;
+    sf::Text m_shapeText;
+    sf::Color m_shapeColor;
+
     float m_initPosX;
     float m_initPosY;
     float m_speedX;
     float m_speedY;
-    std::string m_shapeName;
+
 public:
     movingColoredShape(std::shared_ptr<sf::Shape> shape,
                        sf::Color color,
@@ -22,25 +24,38 @@ public:
                        float initPosY,
                        float speedX,
                        float speedY,
-                       std::string name)
-    : m_shape(std::move(shape)), m_color(color),
+                       sf::Text ShapeText)
+    : m_shape(std::move(shape)), m_shapeColor(color),
       m_initPosX(initPosX), m_initPosY(initPosY),
-      m_speedX(speedX), m_speedY(speedY), m_shapeName(std::move(name))
+      m_speedX(speedX), m_speedY(speedY), m_shapeText(std::move(ShapeText))
     {
-       // Filling shape with new properties
-        m_shape->setFillColor(m_color);
+        m_shape->setFillColor(m_shapeColor);
         m_shape->setPosition(m_initPosX, m_initPosY);
-        std::cout << "Moving ColorShape '" << m_shapeName << "' created" << std::endl;
+        // Same for string
+        putTextInShapeCenter();
+        std::cout << "Moving ColorShape '" << m_shapeText.getString().toAnsiString() << "' created" << std::endl;
     }
 
     void moveBySpeed()
     {
         m_shape->move(m_speedX, m_speedY);
+        m_shapeText.move(m_speedX, m_speedY);
     };
 
     void setSpeedX(float newSpeedX)
     {
         m_speedX = newSpeedX;
+    };
+
+    void putTextInShapeCenter()
+    {
+        sf::FloatRect shapeBounds = m_shape->getGlobalBounds();
+        sf::FloatRect textBounds = m_shapeText.getGlobalBounds();
+
+        // TODO understand why initial textBound is not in 0;0
+        // Circles have the same
+        m_shapeText.setPosition(m_initPosX + shapeBounds.width/2.0f - textBounds.width /2.0f - textBounds.left,
+                                m_initPosY + shapeBounds.height/2.0f - textBounds.height / 2.0f - textBounds.top);
     };
 
     void setSpeedY(float newSpeedY)
@@ -61,6 +76,11 @@ public:
     auto getShape()
     {
         return m_shape;
+    };
+
+    auto getShapeText()
+    {
+        return m_shapeText;
     };
 };
 
@@ -87,11 +107,17 @@ class Engine
 private:
     unsigned int m_windowWidth = 1920;
     unsigned int m_windowHeight = 1080;
+    sf::Font m_font;
+    sf::Color m_fontColor;
+    unsigned int m_fontSize;
+    sf::Text m_defaultText;
     std::vector<movingColoredShape> m_shapes;
     std::map<std::string, std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>> m_shapeCreationFunctionsMapping = {
             {"Circle",    createCircle},
             {"Rectangle", createRectangle}
     };
+    //TODO save Font information
+    // How to pass this font into figure
 
     void parseWindowSettings(std::ifstream& fin)
     {
@@ -101,6 +127,35 @@ private:
 
         m_windowWidth = windowWidth;
         m_windowHeight = windowHeight;
+    };
+
+    void parseFontSetting(std::ifstream& fin)
+    {
+        std::string fontPath;
+        unsigned int fontSize;
+        int rColor;
+        int gColor;
+        int bColor;
+
+        fin >> fontPath >> fontSize >> rColor >> gColor >> bColor;
+        if (!m_font.loadFromFile(fontPath))
+        {
+            std::cout << "Font is not found" << std::endl;
+        }
+        else
+        {
+            m_fontColor = sf::Color(rColor, gColor, bColor);
+            m_fontSize = fontSize;
+
+            m_defaultText.setCharacterSize(m_fontSize);
+            m_defaultText.setFillColor(m_fontColor);
+            m_defaultText.setFont(m_font);
+            m_defaultText.setString("Default String");
+        }
+
+
+
+
     };
 
 
@@ -116,9 +171,13 @@ private:
         int bColor;
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
+
         std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctionsMapping[option_name](fin);
         sf::Color parsedColor(rColor, gColor, bColor);
-        movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeName);
+        sf::Text shapeText = m_defaultText;
+        shapeText.setString(shapeName);
+
+        movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeText);
         m_shapes.push_back(newShape);
     }
 
@@ -140,6 +199,11 @@ public:
         return m_shapes;
     }
 
+    auto& getDeafaultText()
+    {
+        return m_defaultText;
+    }
+
     void loadFromFile(const std::string& filename)
     {
         std::ifstream fin(filename);
@@ -159,13 +223,17 @@ public:
                 parseWindowSettings(fin);
             }
 
+            if (option_name == "Font")
+            {
+                std::cout << "Font settings were found" << std::endl;
+                parseFontSetting(fin);
+            }
+
             if (m_shapeCreationFunctionsMapping.count(option_name) > 0)
             {
                 std::cout << "Shape was found" << std::endl;
                 parseShape(fin, option_name);
             }
-
-            // TODO add font parsing
 
         }
     };
@@ -212,12 +280,11 @@ int main()
         for (auto& shape : e.getShapes())
         {
             window.draw(*shape.getShape());
+            window.draw(shape.getShapeText());
             shape.moveBySpeed();
         }
         window.display();
         e.checkBounce();
-
-        // TODO for all figures update positions and check for bounce
     }
     return 0;
 }

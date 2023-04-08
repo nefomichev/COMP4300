@@ -1,8 +1,8 @@
 Window 1920 1080
-Font fonts/tech.ttf 18 255 255 255
-Circle CGreen 100 150 -0.03 0.02 0 255 0 50
-Circle CBlue 200 250 0.1 0.04 0 0 255 100
-Circle CPurple 300 350 -0.02 -0.01 255 0 255 75
-Rectangle RRed 200 200 0.1 0.15 255 0 0 50 25
-Rectangle RGrey 300 250 -0.02 0.02 100 100 100 50 100
-Rectangle RTeal 25 100 -0.02 -0.020 255 255 100 100
+Font /Users/nikita.fomichev/repos/COMP4300/lecture_4/fonts/tech.ttf 18 255 255 255
+Circle CGreen 200 350 -0.6 0.3 0 255 0 120
+Circle CBlue 200 250 0.3 0.5 0 0 255 100
+Circle CPurple 300 350 -0.5 -0.5 255 0 255 200
+Rectangle RRed 200 200 0.5 0.2 255 0 0 50 25
+Rectangle RGrey 300 250 -0.5 0.05 100 100 100 50 100
+Rectangle RTeal 25 100 -0.5 -0.5 0 255 255 100 100
