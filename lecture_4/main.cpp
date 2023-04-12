@@ -4,6 +4,7 @@
 #include "map"
 #include "vector"
 #include "iostream"
+#include <stdexcept>
 
 
 class movingColoredShape
@@ -17,34 +18,10 @@ class movingColoredShape
     float m_speedX;
     float m_speedY;
 
-public:
-    movingColoredShape(std::shared_ptr<sf::Shape> shape,
-                       sf::Color color,
-                       float initPosX,
-                       float initPosY,
-                       float speedX,
-                       float speedY,
-                       sf::Text ShapeText)
-    : m_shape(std::move(shape)), m_shapeColor(color),
-      m_initPosX(initPosX), m_initPosY(initPosY),
-      m_speedX(speedX), m_speedY(speedY), m_shapeText(std::move(ShapeText))
+    void setInitShapePositionAndColor()
     {
         m_shape->setFillColor(m_shapeColor);
         m_shape->setPosition(m_initPosX, m_initPosY);
-        // Same for string
-        putTextInShapeCenter();
-        std::cout << "Moving ColorShape '" << m_shapeText.getString().toAnsiString() << "' created" << std::endl;
-    }
-
-    void moveBySpeed()
-    {
-        m_shape->move(m_speedX, m_speedY);
-        m_shapeText.move(m_speedX, m_speedY);
-    };
-
-    void setSpeedX(float newSpeedX)
-    {
-        m_speedX = newSpeedX;
     };
 
     void putTextInShapeCenter()
@@ -53,24 +30,34 @@ public:
         sf::FloatRect textBounds = m_shapeText.getGlobalBounds();
 
         // TODO understand why initial textBound is not in 0;0
-        // Circles have the same
         m_shapeText.setPosition(m_initPosX + shapeBounds.width/2.0f - textBounds.width /2.0f - textBounds.left,
                                 m_initPosY + shapeBounds.height/2.0f - textBounds.height / 2.0f - textBounds.top);
     };
 
-    void setSpeedY(float newSpeedY)
+public:
+    movingColoredShape(std::shared_ptr<sf::Shape> shape,
+                       sf::Text ShapeText,
+                       sf::Color color,
+                       float initPosX,
+                       float initPosY,
+                       float speedX,
+                       float speedY)
+    : m_shape(std::move(shape)),
+      m_shapeText(std::move(ShapeText)),
+      m_shapeColor(color),
+      m_initPosX(initPosX),
+      m_initPosY(initPosY),
+      m_speedX(speedX),
+      m_speedY(speedY)
     {
-        m_speedY = newSpeedY;
-    };
+        setInitShapePositionAndColor();
+        putTextInShapeCenter();
+    }
 
-    [[nodiscard]] auto getSpeedX() const
+    void moveBySpeed()
     {
-        return m_speedX ;
-    };
-
-    [[nodiscard]] auto getSpeedY() const
-    {
-        return m_speedY ;
+        m_shape->move(m_speedX, m_speedY);
+        m_shapeText.move(m_speedX, m_speedY);
     };
 
     auto getShape()
@@ -82,82 +69,83 @@ public:
     {
         return m_shapeText;
     };
+
+    void horizontalBounce()
+    {
+        m_speedX *= -1;
+    }
+
+    void verticalBounce()
+    {
+        m_speedY *= -1;
+    }
 };
 
-std::shared_ptr<sf::Shape> createCircle(std::ifstream& fin){
-    float radius;
-    fin >> radius;
-    std::shared_ptr<sf::Shape> shape = std::make_shared<sf::CircleShape>(radius);
-    return shape;
-}
-
-std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
-    float width;
-    float height;
-    fin >> height >> width;
-    std::shared_ptr<sf::Shape> shape = std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
-    return shape;
-}
-
-
-
+using  ShapeLoaderFunction = std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>;
 
 class Engine
 {
+    static std::shared_ptr<sf::Shape> createCircle(std::ifstream& fin){
+        float radius;
+        fin >> radius;
+        return std::make_shared<sf::CircleShape>(radius);
+    }
+
+    static std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
+        float width;
+        float height;
+        fin >> height >> width;
+        return std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
+    }
+
 private:
-    unsigned int m_windowWidth = 1920;
-    unsigned int m_windowHeight = 1080;
-    sf::Font m_font;
+    uint m_windowWidth  = 800; //default
+    uint m_windowHeight = 600;
+    sf::Text  m_WindowDefaultText;
+    sf::Font m_loadedFont;
     sf::Color m_fontColor;
     unsigned int m_fontSize;
-    sf::Text m_defaultText;
-    std::vector<movingColoredShape> m_shapes;
-    std::map<std::string, std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>> m_shapeCreationFunctionsMapping = {
+
+    std::vector<movingColoredShape> m_MovingColorShapesVector;
+
+    std::map<std::string, ShapeLoaderFunction> m_shapeCreationFunctionsMapping = {
             {"Circle",    createCircle},
             {"Rectangle", createRectangle}
     };
-    //TODO save Font information
-    // How to pass this font into figure
 
     void parseWindowSettings(std::ifstream& fin)
     {
-        unsigned int windowWidth;
-        unsigned int windowHeight;
-        fin >> windowWidth >> windowHeight;
-
-        m_windowWidth = windowWidth;
-        m_windowHeight = windowHeight;
+        fin >> m_windowWidth >> m_windowHeight;
     };
 
     void parseFontSetting(std::ifstream& fin)
     {
         std::string fontPath;
-        unsigned int fontSize;
-        int rColor;
-        int gColor;
-        int bColor;
 
-        fin >> fontPath >> fontSize >> rColor >> gColor >> bColor;
-        if (!m_font.loadFromFile(fontPath))
+        fin >> fontPath;
+        if (!m_loadedFont.loadFromFile(fontPath))
+
         {
-            std::cout << "Font is not found" << std::endl;
+            throw std::runtime_error("No Font was found");
         }
+
         else
+
         {
+            uint parsedFontSize;
+            uint rColor;
+            uint gColor;
+            uint bColor;
+
+            fin >> m_fontSize >> rColor >> gColor >> bColor;
             m_fontColor = sf::Color(rColor, gColor, bColor);
-            m_fontSize = fontSize;
-
-            m_defaultText.setCharacterSize(m_fontSize);
-            m_defaultText.setFillColor(m_fontColor);
-            m_defaultText.setFont(m_font);
-            m_defaultText.setString("Default String");
+            // todo refactor
+            m_WindowDefaultText.setFont(m_loadedFont);
+            m_WindowDefaultText.setFillColor(m_fontColor);
+            m_WindowDefaultText.setCharacterSize(m_fontSize);
         }
-
-
-
 
     };
-
 
     void parseShape(std::ifstream& fin, const std::string& option_name)
     {
@@ -166,90 +154,95 @@ private:
         float initY;
         float initSX;
         float initSY;
-        int rColor;
-        int gColor;
-        int bColor;
+        uint rColor;
+        uint gColor;
+        uint bColor;
+
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
 
         std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctionsMapping[option_name](fin);
-        sf::Color parsedColor(rColor, gColor, bColor);
-        sf::Text shapeText = m_defaultText;
+        sf::Color shapeColor(rColor, gColor, bColor);
+        sf::Text shapeText = m_WindowDefaultText;
         shapeText.setString(shapeName);
 
-        movingColoredShape newShape(shape, parsedColor, initX, initY, initSX, initSY, shapeText);
-        m_shapes.push_back(newShape);
+        movingColoredShape newShape(shape, shapeText, shapeColor, initX, initY, initSX, initSY);
+        m_MovingColorShapesVector.push_back(newShape);
     }
 
+    static auto readConfigFromFile(const std::string& filename)
+    {
+        std::ifstream fin(filename);
+
+        if (fin.fail())
+        {
+            throw std::runtime_error("Config was not found");
+        }
+        else
+        {
+            return fin;
+        }
+    }
 public:
     Engine() = default;
 
-    [[nodiscard]] const unsigned int& getWindowWidth() const
+    auto getWindowWidth() const
     {
         return m_windowWidth;
     }
 
-    [[nodiscard]] const unsigned int& getWindowHeight() const
+    auto getWindowHeight() const
     {
         return m_windowHeight;
     }
 
     auto& getShapes()
     {
-        return m_shapes;
-    }
-
-    auto& getDeafaultText()
-    {
-        return m_defaultText;
+        return m_MovingColorShapesVector;
     }
 
     void loadFromFile(const std::string& filename)
     {
-        std::ifstream fin(filename);
-        if (fin.fail())
-        {
-            std::cout << "Config file was not found" << std::endl;
-        }
-
         std::string option_name;
+        std::ifstream fin = readConfigFromFile(filename);
+
         while (fin >> option_name)
-        // TODO call different parse function depending on the option name in MAP ?
         {
 
             if (option_name == "Window")
             {
-                std::cout << "Windows settings were found" << std::endl;
                 parseWindowSettings(fin);
             }
 
             if (option_name == "Font")
             {
-                std::cout << "Font settings were found" << std::endl;
                 parseFontSetting(fin);
             }
 
             if (m_shapeCreationFunctionsMapping.count(option_name) > 0)
             {
-                std::cout << "Shape was found" << std::endl;
                 parseShape(fin, option_name);
             }
-
         }
     };
 
-    void checkBounce()
+    void checkWindowCollisionBounce()
     {
-        for (auto& shape : m_shapes)
+        for (auto& shape : m_MovingColorShapesVector)
         {
-            // TODO use alias
-            float leftX = shape.getShape()->getGlobalBounds().left;
-            float rightX = shape.getShape()->getGlobalBounds().left + shape.getShape()->getGlobalBounds().width;
-            float topY = shape.getShape()->getGlobalBounds().top;
-            float bottomY = shape.getShape()->getGlobalBounds().top + shape.getShape()->getGlobalBounds().height;
+            sf::FloatRect shapeBounds = shape.getShape()->getGlobalBounds();
+            float leftX = shapeBounds.left;
+            float topY =  shapeBounds.top;
+            float rightX =  leftX + shapeBounds.width;
+            float bottomY = topY + shapeBounds.height;
 
-            if (leftX < 0 || rightX  > m_windowWidth)  shape.setSpeedX(shape.getSpeedX() * -1);
-            if (topY < 0  || bottomY > m_windowHeight) shape.setSpeedY(shape.getSpeedY() * -1);
+            auto windowRightBound =  static_cast<float>(m_windowWidth);
+            auto windowLeftBound =  0.0f;
+            auto windowTopBound = 0.0f;
+            auto windowBottomBound =  static_cast<float>(m_windowHeight);
+
+            if (leftX < windowLeftBound || rightX  > windowRightBound)  shape.horizontalBounce();
+            if (topY < windowBottomBound  || bottomY > windowTopBound) shape.verticalBounce();
         }
 
     }
@@ -284,7 +277,7 @@ int main()
             shape.moveBySpeed();
         }
         window.display();
-        e.checkBounce();
+        e.checkWindowCollisionBounce();
     }
     return 0;
 }
