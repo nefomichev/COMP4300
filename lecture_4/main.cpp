@@ -7,57 +7,55 @@
 #include <stdexcept>
 
 
-class movingColoredShape
+class MovingColoredShapeWithText
 {
     std::shared_ptr<sf::Shape> m_shape;
     sf::Text m_shapeText;
-    sf::Color m_shapeColor;
+    float m_shapeSpeedX;
+    float m_shapeSpeedY;
 
-    float m_initPosX;
-    float m_initPosY;
-    float m_speedX;
-    float m_speedY;
-
-    void setInitShapePositionAndColor()
+    void setInitShapePositionAndColor(const sf::Color& parsedShapeColor, float initPosX, float initPosY)
     {
-        m_shape->setFillColor(m_shapeColor);
-        m_shape->setPosition(m_initPosX, m_initPosY);
+        m_shape->setFillColor(parsedShapeColor);
+        m_shape->setPosition(initPosX, initPosY);
     };
 
-    void putTextInShapeCenter()
+    void putTextInShapeCenter(float initPosX, float initPosY)
     {
-        sf::FloatRect shapeBounds = m_shape->getGlobalBounds();
-        sf::FloatRect textBounds = m_shapeText.getGlobalBounds();
+        sf::FloatRect shapeGlobalBounds = m_shape->getGlobalBounds();
+        sf::FloatRect textGlobalBounds = m_shapeText.getGlobalBounds();
+        sf::Vector2f indentToFitCenter = calculateTextCenteredIndent(shapeGlobalBounds, textGlobalBounds);
+        m_shapeText.setPosition(initPosX + indentToFitCenter.x,initPosY + indentToFitCenter.y);
+    };
 
-        // TODO understand why initial textBound is not in 0;0
-        m_shapeText.setPosition(m_initPosX + shapeBounds.width/2.0f - textBounds.width /2.0f - textBounds.left,
-                                m_initPosY + shapeBounds.height/2.0f - textBounds.height / 2.0f - textBounds.top);
+    static sf::Vector2f calculateTextCenteredIndent(const sf::FloatRect& shapeGlobalBounds, const sf::FloatRect& textGlobalBounds)
+    {
+        float xAxisIndent = shapeGlobalBounds.width/2.0f - textGlobalBounds.width /2.0f - textGlobalBounds.left;
+        float yAxisIndent =  shapeGlobalBounds.height/2.0f - textGlobalBounds.height / 2.0f - textGlobalBounds.top;
+        return {xAxisIndent,yAxisIndent};
     };
 
 public:
-    movingColoredShape(std::shared_ptr<sf::Shape> shape,
-                       sf::Text ShapeText,
-                       sf::Color color,
-                       float initPosX,
-                       float initPosY,
-                       float speedX,
-                       float speedY)
+    MovingColoredShapeWithText(std::shared_ptr<sf::Shape> shape,
+                               sf::Text shapeText,
+                               sf::Color parsedShapeColor,
+                               float shapeInitPosX,
+                               float shapeInitPosY,
+                               float shapeSpeedX,
+                               float shapeSpeedY)
     : m_shape(std::move(shape)),
-      m_shapeText(std::move(ShapeText)),
-      m_shapeColor(color),
-      m_initPosX(initPosX),
-      m_initPosY(initPosY),
-      m_speedX(speedX),
-      m_speedY(speedY)
+      m_shapeText(std::move(shapeText)),
+      m_shapeSpeedX(shapeSpeedX),
+      m_shapeSpeedY(shapeSpeedY)
     {
-        setInitShapePositionAndColor();
-        putTextInShapeCenter();
+        setInitShapePositionAndColor(parsedShapeColor, shapeInitPosX, shapeInitPosY);
+        putTextInShapeCenter(shapeInitPosX, shapeInitPosY);
     }
 
     void moveBySpeed()
     {
-        m_shape->move(m_speedX, m_speedY);
-        m_shapeText.move(m_speedX, m_speedY);
+        m_shape->move(m_shapeSpeedX, m_shapeSpeedY);
+        m_shapeText.move(m_shapeSpeedX, m_shapeSpeedY);
     };
 
     auto getShape()
@@ -72,12 +70,12 @@ public:
 
     void horizontalBounce()
     {
-        m_speedX *= -1;
+        m_shapeSpeedX *= -1;
     }
 
     void verticalBounce()
     {
-        m_speedY *= -1;
+        m_shapeSpeedY *= -1;
     }
 };
 
@@ -101,12 +99,12 @@ class Engine
 private:
     uint m_windowWidth  = 800; //default
     uint m_windowHeight = 600;
+    uint m_fontSize = 14;
     sf::Text  m_WindowDefaultText;
     sf::Font m_loadedFont;
     sf::Color m_fontColor;
-    unsigned int m_fontSize;
 
-    std::vector<movingColoredShape> m_MovingColorShapesVector;
+    std::vector<MovingColoredShapeWithText> m_MovingColorShapesVector;
 
     std::map<std::string, ShapeLoaderFunction> m_shapeCreationFunctionsMapping = {
             {"Circle",    createCircle},
@@ -166,7 +164,7 @@ private:
         sf::Text shapeText = m_WindowDefaultText;
         shapeText.setString(shapeName);
 
-        movingColoredShape newShape(shape, shapeText, shapeColor, initX, initY, initSX, initSY);
+        MovingColoredShapeWithText newShape(shape, shapeText, shapeColor, initX, initY, initSX, initSY);
         m_MovingColorShapesVector.push_back(newShape);
     }
 
