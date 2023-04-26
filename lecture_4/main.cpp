@@ -6,76 +6,108 @@
 #include "iostream"
 #include <stdexcept>
 
-
 class MovingColoredShapeWithText
 {
     std::shared_ptr<sf::Shape> m_shape;
     sf::Text m_shapeText;
-    float m_shapeSpeedX;
-    float m_shapeSpeedY;
+    sf::Vector2f m_shapeSpeed;
 
-    void setInitShapePositionAndColor(const sf::Color& parsedShapeColor, float initPosX, float initPosY)
+    void setInitShapePosition(sf::Vector2f shapeInitPos)
+    {
+        m_shape->setPosition(shapeInitPos);
+    }
+
+    void setInitTextPosition(sf::Vector2f textInitPos)
+    {
+        m_shapeText.setPosition(textInitPos);
+    }
+
+    void setShapeColor(const sf::Color& parsedShapeColor)
     {
         m_shape->setFillColor(parsedShapeColor);
-        m_shape->setPosition(initPosX, initPosY);
-    };
+    }
 
-    void putTextInShapeCenter(float initPosX, float initPosY)
+    void putTextInShapeCenter(sf::Vector2f shapeInitPos)
     {
-        sf::FloatRect shapeGlobalBounds = m_shape->getGlobalBounds();
-        sf::FloatRect textGlobalBounds = m_shapeText.getGlobalBounds();
-        sf::Vector2f indentToFitCenter = calculateTextCenteredIndent(shapeGlobalBounds, textGlobalBounds);
-        m_shapeText.setPosition(initPosX + indentToFitCenter.x,initPosY + indentToFitCenter.y);
-    };
+        auto indentToFitCenter = calculateTextCenteredIndent();
+        auto centeredTextPosition = calculateCenteredTextPosition(shapeInitPos, indentToFitCenter);
+        setInitTextPosition(centeredTextPosition);
+    }
 
-    static sf::Vector2f calculateTextCenteredIndent(const sf::FloatRect& shapeGlobalBounds, const sf::FloatRect& textGlobalBounds)
+    sf::Vector2f calculateTextCenteredIndent()
     {
+        auto shapeGlobalBounds = getShapeGlobalBounds();
+        auto textGlobalBounds = getTextGlobalBounds();
         float xAxisIndent = shapeGlobalBounds.width/2.0f - textGlobalBounds.width /2.0f - textGlobalBounds.left;
         float yAxisIndent =  shapeGlobalBounds.height/2.0f - textGlobalBounds.height / 2.0f - textGlobalBounds.top;
         return {xAxisIndent,yAxisIndent};
-    };
+    }
+
+    sf::Vector2f calculateCenteredTextPosition(sf::Vector2f shapeInitPos, sf::Vector2f indentToFitCenter)
+    {
+        return {shapeInitPos.x + indentToFitCenter.x,shapeInitPos.y + indentToFitCenter.y};
+
+    }
+
+    sf::FloatRect getShapeGlobalBounds()
+    {
+        return m_shape->getGlobalBounds();
+    }
+
+    sf::FloatRect getTextGlobalBounds()
+    {
+        return m_shapeText.getGlobalBounds();
+    }
+
+    void moveShape()
+    {
+        m_shape->move(m_shapeSpeed.x, m_shapeSpeed.y);
+    }
+
+    void moveText()
+    {
+        m_shapeText.move(m_shapeSpeed.x, m_shapeSpeed.y);
+    }
 
 public:
     MovingColoredShapeWithText(std::shared_ptr<sf::Shape> shape,
                                sf::Text shapeText,
                                sf::Color parsedShapeColor,
-                               float shapeInitPosX,
-                               float shapeInitPosY,
-                               float shapeSpeedX,
-                               float shapeSpeedY)
+                               sf::Vector2f shapeInitPos,
+                               sf::Vector2f shapeInitSpeed)
     : m_shape(std::move(shape)),
       m_shapeText(std::move(shapeText)),
-      m_shapeSpeedX(shapeSpeedX),
-      m_shapeSpeedY(shapeSpeedY)
+      m_shapeSpeed(shapeInitSpeed)
     {
-        setInitShapePositionAndColor(parsedShapeColor, shapeInitPosX, shapeInitPosY);
-        putTextInShapeCenter(shapeInitPosX, shapeInitPosY);
+        setInitShapePosition(shapeInitPos);
+        setShapeColor(parsedShapeColor);
+        putTextInShapeCenter(shapeInitPos);
     }
 
-    void moveBySpeed()
+    void move()
     {
-        m_shape->move(m_shapeSpeedX, m_shapeSpeedY);
-        m_shapeText.move(m_shapeSpeedX, m_shapeSpeedY);
-    };
+        moveShape();
+        moveText();
+    }
 
     auto getShape()
     {
         return m_shape;
-    };
+    }
 
     auto getShapeText()
     {
         return m_shapeText;
-    };
+    }
 
     void horizontalBounce()
     {
-        m_shapeSpeedX *= -1;
+        m_shapeSpeed.x *= -1;
     }
 
     void verticalBounce()
     {
-        m_shapeSpeedY *= -1;
+        m_shapeSpeed.y *= -1;
     }
 };
 
@@ -164,7 +196,7 @@ private:
         sf::Text shapeText = m_WindowDefaultText;
         shapeText.setString(shapeName);
 
-        MovingColoredShapeWithText newShape(shape, shapeText, shapeColor, initX, initY, initSX, initSY);
+        MovingColoredShapeWithText newShape(shape, shapeText, shapeColor, {initX, initY}, {initSX, initSY});
         m_MovingColorShapesVector.push_back(newShape);
     }
 
@@ -272,7 +304,7 @@ int main()
         {
             window.draw(*shape.getShape());
             window.draw(shape.getShapeText());
-            shape.moveBySpeed();
+            shape.move();
         }
         window.display();
         e.checkWindowCollisionBounce();
