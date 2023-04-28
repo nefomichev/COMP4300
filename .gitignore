@@ -36,3 +36,6 @@
 .idea/
 cmake-build-debug/
 cmake-build-debug-coverage/
+.ccls-cache/
+Debug/
+*fonts/
