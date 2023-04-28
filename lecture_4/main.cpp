@@ -86,7 +86,6 @@ public:
 
     void move()
     {
-        // TODO I'm not sure this is the elegant way to combine both objects
         moveShape();
         moveText();
     }
