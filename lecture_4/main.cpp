@@ -1,5 +1,5 @@
-#include <utility>
 #include "SFML/Graphics.hpp"
+#include <utility>
 #include "fstream"
 #include "map"
 #include "vector"
@@ -40,7 +40,7 @@ class MovingColoredShapeWithText
         auto textGlobalBounds = getTextGlobalBounds();
         float xAxisIndent = shapeGlobalBounds.width/2.0f - textGlobalBounds.width /2.0f - textGlobalBounds.left;
         float yAxisIndent =  shapeGlobalBounds.height/2.0f - textGlobalBounds.height / 2.0f - textGlobalBounds.top;
-        return {xAxisIndent,yAxisIndent};
+        return {xAxisIndent, yAxisIndent};
     }
 
     sf::Vector2f calculateCenteredTextPosition(sf::Vector2f shapeInitPos, sf::Vector2f indentToFitCenter)
