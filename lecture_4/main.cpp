@@ -283,7 +283,7 @@ public:
 int main()
 {
     Engine e;
-    e.loadFromFile("/Users/nikita.fomichev/repos/COMP4300/lecture_4/config.txt");
+    e.loadFromFile("../config.txt");
 
     sf::RenderWindow window(sf::VideoMode(e.getWindowWidth(), e.getWindowHeight()), "My Window");
     window.setFramerateLimit(60);
