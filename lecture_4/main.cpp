@@ -272,7 +272,7 @@ public:
             auto windowBottomBound =  static_cast<float>(m_windowHeight);
 
             if (leftX < windowLeftBound || rightX  > windowRightBound)  shape.horizontalBounce();
-            if (topY < windowBottomBound  || bottomY > windowTopBound) shape.verticalBounce();
+            if (topY < windowTopBound  || bottomY > windowBottomBound) shape.verticalBounce();
         }
 
     }
