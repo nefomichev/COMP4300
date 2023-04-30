@@ -1,4 +1,5 @@
 #include "SFML/Graphics.hpp"
+#include <ostream>
 #include <utility>
 #include "fstream"
 #include "map"
@@ -70,7 +71,7 @@ class MovingColoredShapeWithText
     }
 
 public:
-    MovingColoredShapeWithText(std::shared_ptr<sf::Shape> shape,
+    MovingColoredShapeWithText(std::shared_ptr<sf::Shape>& shape,
                                sf::Text shapeText,
                                sf::Color parsedShapeColor,
                                sf::Vector2f shapeInitPos,
@@ -111,17 +112,22 @@ public:
     }
 };
 
-using  ShapeLoaderFunction = std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>;
 
 class Engine
 {
-    static std::shared_ptr<sf::Shape> createCircle(std::ifstream& fin){
+    using  ShapeLoaderFunction = std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>;
+
+    static std::shared_ptr<sf::Shape> loadCircle(std::ifstream& fin)
+    // ShapeLoaderFunction
+    {
         float radius;
         fin >> radius;
         return std::make_shared<sf::CircleShape>(radius);
     }
 
-    static std::shared_ptr<sf::Shape> createRectangle(std::ifstream& fin){
+    static std::shared_ptr<sf::Shape> loadRectangle(std::ifstream& fin)
+    // ShapeLoaderFunction
+    {
         float width;
         float height;
         fin >> height >> width;
@@ -129,53 +135,63 @@ class Engine
     }
 
 private:
-    uint m_windowWidth  = 800; //default
+    uint m_windowWidth = 800;
     uint m_windowHeight = 600;
-    uint m_fontSize = 14;
+    sf::Font m_textFont;
     sf::Text  m_WindowDefaultText;
-    sf::Font m_loadedFont;
-    sf::Color m_fontColor;
-
-    std::vector<MovingColoredShapeWithText> m_MovingColorShapesVector;
-
-    std::map<std::string, ShapeLoaderFunction> m_shapeCreationFunctionsMapping = {
-            {"Circle",    createCircle},
-            {"Rectangle", createRectangle}
+    std::vector<MovingColoredShapeWithText> m_MovingColorShapes;
+    std::map<std::string, ShapeLoaderFunction> m_shapeCreationFunctions = {
+            {"Circle",    loadCircle},
+            {"Rectangle", loadRectangle}
     };
+
 
     void parseWindowSettings(std::ifstream& fin)
     {
         fin >> m_windowWidth >> m_windowHeight;
     };
 
-    void parseFontSetting(std::ifstream& fin)
+    void parseFont(std::ifstream& fin)
     {
         std::string fontPath;
-
         fin >> fontPath;
-        if (!m_loadedFont.loadFromFile(fontPath))
 
+        loadFont(fontPath);
+    }
+
+    void loadFont(const std::string& fontPath)
+    {
+        if (!m_textFont.loadFromFile(fontPath))
         {
             throw std::runtime_error("No Font was found");
         }
-
         else
-
         {
-            uint parsedFontSize;
-            uint rColor;
-            uint gColor;
-            uint bColor;
-
-            fin >> m_fontSize >> rColor >> gColor >> bColor;
-            m_fontColor = sf::Color(rColor, gColor, bColor);
-            // todo refactor
-            m_WindowDefaultText.setFont(m_loadedFont);
-            m_WindowDefaultText.setFillColor(m_fontColor);
-            m_WindowDefaultText.setCharacterSize(m_fontSize);
+            m_WindowDefaultText.setFont(m_textFont);
         }
+    }
 
-    };
+    void parseFontSettings(std::ifstream& fin)
+    {
+        uint parsedFontSize, rColor, gColor, bColor;
+        fin >> parsedFontSize >> rColor >> gColor >> bColor;
+        auto fontColor = sf::Color(rColor, gColor, bColor);
+
+        loadFontSettings(fontColor, parsedFontSize);
+    }
+
+    void loadFontSettings(const sf::Color& fontColor, uint fontSize)
+    {
+        try
+        {
+            m_WindowDefaultText.setCharacterSize(fontSize);
+            m_WindowDefaultText.setFillColor(fontColor);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Error setting font settings: " << e.what() << std::endl;
+        }
+    }
 
     void parseShape(std::ifstream& fin, const std::string& option_name)
     {
@@ -190,14 +206,14 @@ private:
 
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
-
-        std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctionsMapping[option_name](fin);
+      
+        std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctions[option_name](fin);
         sf::Color shapeColor(rColor, gColor, bColor);
-        sf::Text shapeText = m_WindowDefaultText;
-        shapeText.setString(shapeName);
+        m_WindowDefaultText.setString(shapeName);
 
-        MovingColoredShapeWithText newShape(shape, shapeText, shapeColor, {initX, initY}, {initSX, initSY});
-        m_MovingColorShapesVector.push_back(newShape);
+        MovingColoredShapeWithText newShape(shape, m_WindowDefaultText, shapeColor, {initX, initY}, {initSX, initSY});
+        m_WindowDefaultText.getGlobalBounds();
+        m_MovingColorShapes.push_back(newShape);
     }
 
     static auto readConfigFromFile(const std::string& filename)
@@ -228,7 +244,7 @@ public:
 
     auto& getShapes()
     {
-        return m_MovingColorShapesVector;
+        return m_MovingColorShapes;
     }
 
     void loadFromFile(const std::string& filename)
@@ -246,10 +262,11 @@ public:
 
             if (option_name == "Font")
             {
-                parseFontSetting(fin);
+                parseFont(fin);
+                parseFontSettings(fin);
             }
 
-            if (m_shapeCreationFunctionsMapping.count(option_name) > 0)
+            if (m_shapeCreationFunctions.count(option_name) > 0)
             {
                 parseShape(fin, option_name);
             }
@@ -258,7 +275,7 @@ public:
 
     void checkWindowCollisionBounce()
     {
-        for (auto& shape : m_MovingColorShapesVector)
+        for (auto& shape : m_MovingColorShapes)
         {
             sf::FloatRect shapeBounds = shape.getShape()->getGlobalBounds();
             float leftX = shapeBounds.left;
