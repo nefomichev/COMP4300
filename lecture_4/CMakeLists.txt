@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
 set(PROJECT_NAME MovingShapes)
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES src/main.cpp src/MovingColoredShapeWithText.hpp src/GameEngine.hpp)
 
 project(${PROJECT_NAME} VERSION 0.1)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
