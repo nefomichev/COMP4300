@@ -91,15 +91,19 @@ private:
         float initX, initY, initSX, initSY;
         uint rColor, gColor, bColor;
 
-
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
 
-        std::shared_ptr<sf::Shape> shape = m_shapeCreationFunctions[option_name](fin);
-        sf::Color shapeColor(rColor, gColor, bColor);
         m_WindowDefaultText.setString(shapeName);
+        auto shape = m_shapeCreationFunctions[option_name](fin);
+        auto shapeColor = sf::Color(rColor, gColor, bColor);
+        auto newShape = MovingColoredShapeWithText(
+                shape,
+                m_WindowDefaultText,
+                shapeColor,
+                {initX, initY},
+                {initSX, initSY}
+                );
 
-        MovingColoredShapeWithText newShape(shape, m_WindowDefaultText, shapeColor, {initX, initY}, {initSX, initSY});
-        m_WindowDefaultText.getGlobalBounds();
         m_MovingColorShapes.push_back(newShape);
     }
 
@@ -141,6 +145,7 @@ public:
 
         while (fin >> option_name)
         {
+            // TODO think about the switch statement
 
             if (option_name == "Window")
             {
@@ -153,23 +158,23 @@ public:
                 parseFontSettings(fin);
             }
 
+            // TODO this check looks ugly
             if (m_shapeCreationFunctions.count(option_name) > 0)
             {
                 parseShape(fin, option_name);
             }
         }
     };
-
+// TODO Should it be here?
     void checkWindowCollisionBounce()
     {
         for (auto& shape : m_MovingColorShapes)
         {
             sf::FloatRect shapeBounds = shape.getShape()->getGlobalBounds();
-            float leftX = shapeBounds.left;
-            float topY =  shapeBounds.top;
-            float rightX =  leftX + shapeBounds.width;
-            float bottomY = topY + shapeBounds.height;
-
+            auto leftX = shapeBounds.left;
+            auto topY =  shapeBounds.top;
+            auto rightX =  leftX + shapeBounds.width;
+            auto bottomY = topY + shapeBounds.height;
             auto windowRightBound =  static_cast<float>(m_windowWidth);
             auto windowLeftBound =  0.0f;
             auto windowTopBound = 0.0f;
