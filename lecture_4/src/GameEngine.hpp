@@ -88,13 +88,8 @@ private:
     void parseShape(std::ifstream& fin, const std::string& option_name)
     {
         std::string shapeName;
-        float initX;
-        float initY;
-        float initSX;
-        float initSY;
-        uint rColor;
-        uint gColor;
-        uint bColor;
+        float initX, initY, initSX, initSY;
+        uint rColor, gColor, bColor;
 
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
