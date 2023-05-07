@@ -3,10 +3,9 @@
 
 int main()
 {
-    Engine e;
-    e.loadFromFile("../config.txt");
+    Engine engine("../config.txt");
 
-    sf::RenderWindow window(sf::VideoMode(e.getWindowWidth(), e.getWindowHeight()), "My Window");
+    sf::RenderWindow window(sf::VideoMode(engine.getWindowWidth(), engine.getWindowHeight()), "My Window");
     window.setFramerateLimit(60);
 
     while (window.isOpen())
@@ -21,14 +20,14 @@ int main()
         }
 
         window.clear();
-        for (auto& shape : e.getShapes())
+        for (auto& shape : engine.getShapes())
         {
             window.draw(*shape.getShape());
             window.draw(shape.getShapeText());
             shape.move();
         }
         window.display();
-        e.checkWindowCollisionBounce();
+        engine.checkWindowCollisionBounce();
     }
     return 0;
 }

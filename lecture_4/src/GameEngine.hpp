@@ -5,6 +5,8 @@
 #ifndef MOVINGSHAPES_GAMEENGINE_HPP
 #define MOVINGSHAPES_GAMEENGINE_HPP
 
+using uint = unsigned int;
+
 class Engine
 {
     using  ShapeLoaderFunction = std::function<std::shared_ptr<sf::Shape>(std::ifstream&)>;
@@ -26,7 +28,6 @@ class Engine
         return std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
     }
 
-private:
     uint m_windowWidth = 800;
     uint m_windowHeight = 600;
     sf::Font m_textFont;
@@ -121,7 +122,10 @@ private:
         }
     }
 public:
-    Engine() = default;
+    explicit Engine(const std::string& configFileName)
+    {
+        loadFromFile(configFileName);
+    }
 
     auto getWindowWidth() const
     {
