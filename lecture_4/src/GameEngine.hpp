@@ -28,11 +28,11 @@ class Engine
         return std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
     }
 
-    uint m_windowWidth = 800;
-    uint m_windowHeight = 600;
+    uint m_windowWidth;
+    uint m_windowHeight;
     sf::Font m_textFont;
     sf::Text  m_WindowDefaultText;
-    std::vector<MovingColoredShapeWithText> m_MovingColorShapes{};
+    std::vector<MovingColoredShapeWithText> m_movingColorShapes{};
     std::map<std::string, ShapeLoaderFunction> m_shapeCreationFunctions = {
             {"Circle",    loadCircle},
             {"Rectangle", loadRectangle}
@@ -86,26 +86,31 @@ class Engine
         }
     }
 
-    void parseShape(std::ifstream& fin, const std::string& option_name)
+    void parseAndLoadShape(std::ifstream& fin, const std::string& shapeType)
     {
         std::string shapeName;
         float initX, initY, initSX, initSY;
         uint rColor, gColor, bColor;
 
         fin >> shapeName >> initX >> initY >> initSX >> initSY >> rColor >> gColor >> bColor;
+        auto shape = m_shapeCreationFunctions[shapeType](fin);
+        auto shapeText = createShapeTextFromDefaultTemplate(shapeName);
 
-        m_WindowDefaultText.setString(shapeName);
-        auto shape = m_shapeCreationFunctions[option_name](fin);
-        auto shapeColor = sf::Color(rColor, gColor, bColor);
-        auto newShape = MovingColoredShapeWithText(
+        m_movingColorShapes.emplace_back(
                 shape,
-                m_WindowDefaultText,
-                shapeColor,
-                {initX, initY},
-                {initSX, initSY}
-                );
+                shapeText,
+                sf::Color(rColor, gColor, bColor),
+                sf::Vector2f {initX, initY},
+                sf::Vector2f {initSX, initSY}
+        );
+    }
 
-        m_MovingColorShapes.push_back(newShape);
+    std::shared_ptr<sf::Text> createShapeTextFromDefaultTemplate(const std::string& shapeName)
+    {
+        auto shapeText = m_WindowDefaultText;
+        shapeText.setString(shapeName);
+
+        return std::make_shared<sf::Text>(shapeText);
     }
 
     static auto readConfigFromFile(const std::string& filename)
@@ -122,24 +127,11 @@ class Engine
         }
     }
 public:
+    std::shared_ptr<sf::RenderWindow> gameWindow;
+
     explicit Engine(const std::string& configFileName)
     {
         loadFromFile(configFileName);
-    }
-
-    auto getWindowWidth() const
-    {
-        return m_windowWidth;
-    }
-
-    auto getWindowHeight() const
-    {
-        return m_windowHeight;
-    }
-
-    auto& getShapes()
-    {
-        return m_MovingColorShapes;
     }
 
     void loadFromFile(const std::string& filename)
@@ -149,8 +141,6 @@ public:
 
         while (fin >> option_name)
         {
-            // TODO think about the switch statement
-
             if (option_name == "Window")
             {
                 parseWindowSettings(fin);
@@ -162,33 +152,52 @@ public:
                 parseFontSettings(fin);
             }
 
-            // TODO this check looks ugly
             if (m_shapeCreationFunctions.count(option_name) > 0)
             {
-                parseShape(fin, option_name);
+                parseAndLoadShape(fin, option_name);
             }
         }
     };
-// TODO Should it be here?
-    void checkWindowCollisionBounce()
+
+    void renderFrame()
     {
-        for (auto& shape : m_MovingColorShapes)
+        for (auto& shape : m_movingColorShapes)
         {
-            sf::FloatRect shapeBounds = shape.getShape()->getGlobalBounds();
-            auto leftX = shapeBounds.left;
-            auto topY =  shapeBounds.top;
-            auto rightX =  leftX + shapeBounds.width;
-            auto bottomY = topY + shapeBounds.height;
-            auto windowRightBound =  static_cast<float>(m_windowWidth);
-            auto windowLeftBound =  0.0f;
-            auto windowTopBound = 0.0f;
-            auto windowBottomBound =  static_cast<float>(m_windowHeight);
-
-            if (leftX < windowLeftBound || rightX  > windowRightBound)  shape.horizontalBounce();
-            if (topY < windowTopBound  || bottomY > windowBottomBound) shape.verticalBounce();
+            gameWindow->draw(*shape.getShape());
+            gameWindow->draw(*shape.getShapeText());
         }
-
+        gameWindow->display();
+        gameWindow->clear();
     }
-};
 
+    void updateFrame()
+    {
+        for (auto &shape: m_movingColorShapes)
+        {
+            shape.windowBounce({m_windowWidth, m_windowHeight});
+            shape.move();
+        }
+    }
+
+    void createGameWindow()
+    {
+        gameWindow = std::make_shared<sf::RenderWindow>(
+                sf::VideoMode(m_windowWidth, m_windowHeight),
+                "MovingColoredShapes");
+        gameWindow->setFramerateLimit(60);
+    }
+
+    void lookForEvents() const
+    {
+        sf::Event event{};
+        while (gameWindow->pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+            {
+                gameWindow->close();
+            }
+        }
+    }
+
+};
 #endif //MOVINGSHAPES_GAMEENGINE_HPP

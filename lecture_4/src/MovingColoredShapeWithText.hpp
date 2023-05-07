@@ -6,7 +6,7 @@
 class MovingColoredShapeWithText
 {
     std::shared_ptr<sf::Shape> m_shape;
-    sf::Text m_shapeText;
+    std::shared_ptr<sf::Text> m_shapeText;
     sf::Vector2f m_shapeSpeed;
 
     void setInitShapePosition(sf::Vector2f shapeInitPos)
@@ -16,7 +16,7 @@ class MovingColoredShapeWithText
 
     void setInitTextPosition(sf::Vector2f textInitPos)
     {
-        m_shapeText.setPosition(textInitPos);
+        m_shapeText->setPosition(textInitPos);
     }
 
     void setShapeColor(const sf::Color& parsedShapeColor)
@@ -53,7 +53,7 @@ class MovingColoredShapeWithText
 
     sf::FloatRect getTextGlobalBounds()
     {
-        return m_shapeText.getGlobalBounds();
+        return m_shapeText->getGlobalBounds();
     }
 
     void moveShape()
@@ -63,12 +63,12 @@ class MovingColoredShapeWithText
 
     void moveText()
     {
-        m_shapeText.move(m_shapeSpeed.x, m_shapeSpeed.y);
+        m_shapeText->move(m_shapeSpeed.x, m_shapeSpeed.y);
     }
 
 public:
     MovingColoredShapeWithText(std::shared_ptr<sf::Shape>& shape,
-                               sf::Text shapeText,
+                               std::shared_ptr<sf::Text>& shapeText,
                                sf::Color parsedShapeColor,
                                sf::Vector2f shapeInitPos,
                                sf::Vector2f shapeInitSpeed)
@@ -105,6 +105,22 @@ public:
     void verticalBounce()
     {
         m_shapeSpeed.y *= -1;
+    }
+
+    void windowBounce(const sf::Vector2u& windowSize)
+    {
+        sf::FloatRect shapeBounds = m_shape->getGlobalBounds();
+        auto leftX = shapeBounds.left;
+        auto topY =  shapeBounds.top;
+        auto rightX =  leftX + shapeBounds.width;
+        auto bottomY = topY + shapeBounds.height;
+        auto windowRightBound =  static_cast<float>(windowSize.x);
+        auto windowLeftBound =  0.0f;
+        auto windowTopBound = 0.0f;
+        auto windowBottomBound =  static_cast<float>(windowSize.y);
+
+        if (leftX < windowLeftBound || rightX  > windowRightBound)  horizontalBounce();
+        if (topY < windowTopBound  || bottomY > windowBottomBound)  verticalBounce();
     }
 };
 #endif //MOVINGSHAPES_SHAPE_HPP
