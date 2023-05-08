@@ -100,15 +100,19 @@ public:
 
     void tryHorizontalWindowBounce(const sf::FloatRect& shapeBounds, const sf::FloatRect& windowBounds)
     {
-        if (windowBounds.left > shapeBounds.left ||
-            windowBounds.left + windowBounds.width < shapeBounds.left + shapeBounds.width)
+        auto windowBoundsRight = windowBounds.left + windowBounds.width;
+        auto shapeBoundsRight = shapeBounds.left + shapeBounds.width;
+
+        if (windowBounds.left > shapeBounds.left || windowBoundsRight < shapeBoundsRight)
         m_shapeSpeed.x *= -1;
     }
 
     void tryVerticalWindowBounce(const sf::FloatRect& shapeBounds, const sf::FloatRect& windowBounds)
     {
-        if (windowBounds.top > shapeBounds.top ||
-            windowBounds.top + windowBounds.height < shapeBounds.top + shapeBounds.height)
+        auto windowBoundsBottom = windowBounds.top + windowBounds.height;
+        auto shapeBoundsBottom = shapeBounds.top + shapeBounds.height;
+
+        if (windowBounds.top > shapeBounds.top || windowBoundsBottom < shapeBoundsBottom)
         m_shapeSpeed.y *= -1;
     }
 
