@@ -3,7 +3,7 @@
 
 int main()
 {
-    Engine engine("../config.txt");
+    auto engine = Engine("../config.txt");
     engine.createGameWindow();
 
     while (engine.gameWindow->isOpen())

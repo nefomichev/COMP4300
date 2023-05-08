@@ -5,6 +5,7 @@
 
 class MovingColoredShapeWithText
 {
+private:
     std::shared_ptr<sf::Shape> m_shape;
     std::shared_ptr<sf::Text> m_shapeText;
     sf::Vector2f m_shapeSpeed;
@@ -97,30 +98,30 @@ public:
         return m_shapeText;
     }
 
-    void horizontalBounce()
+    void tryHorizontalWindowBounce(const sf::FloatRect& shapeBounds, const sf::FloatRect& windowBounds)
     {
+        if (windowBounds.left > shapeBounds.left ||
+            windowBounds.left + windowBounds.width < shapeBounds.left + shapeBounds.width)
         m_shapeSpeed.x *= -1;
     }
 
-    void verticalBounce()
+    void tryVerticalWindowBounce(const sf::FloatRect& shapeBounds, const sf::FloatRect& windowBounds)
     {
+        if (windowBounds.top > shapeBounds.top ||
+            windowBounds.top + windowBounds.height < shapeBounds.top + shapeBounds.height)
         m_shapeSpeed.y *= -1;
     }
 
-    void windowBounce(const sf::Vector2u& windowSize)
+    void windowBounce(sf::Vector2u windowSize)
     {
         sf::FloatRect shapeBounds = m_shape->getGlobalBounds();
-        auto leftX = shapeBounds.left;
-        auto topY =  shapeBounds.top;
-        auto rightX =  leftX + shapeBounds.width;
-        auto bottomY = topY + shapeBounds.height;
-        auto windowRightBound =  static_cast<float>(windowSize.x);
-        auto windowLeftBound =  0.0f;
-        auto windowTopBound = 0.0f;
-        auto windowBottomBound =  static_cast<float>(windowSize.y);
+        sf::FloatRect windowBounds(0, 0,
+                                   static_cast<float>(windowSize.x),
+                                  static_cast<float>(windowSize.y)
+                                   );
 
-        if (leftX < windowLeftBound || rightX  > windowRightBound)  horizontalBounce();
-        if (topY < windowTopBound  || bottomY > windowBottomBound)  verticalBounce();
+        tryHorizontalWindowBounce(shapeBounds, windowBounds);
+        tryVerticalWindowBounce(shapeBounds, windowBounds);
     }
 };
 #endif //MOVINGSHAPES_SHAPE_HPP

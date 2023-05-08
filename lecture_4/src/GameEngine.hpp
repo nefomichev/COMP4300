@@ -28,8 +28,8 @@ class Engine
         return std::make_shared<sf::RectangleShape>(sf::Vector2f(height, width));
     }
 
-    uint m_windowWidth;
-    uint m_windowHeight;
+    uint m_windowWidth{};
+    uint m_windowHeight{};
     sf::Font m_textFont;
     sf::Text  m_WindowDefaultText;
     std::vector<MovingColoredShapeWithText> m_movingColorShapes{};
